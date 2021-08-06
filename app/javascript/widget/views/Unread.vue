@@ -1,5 +1,8 @@
 <template>
-  <div class="unread-wrap">
+  <div
+    class="unread-wrap"
+    :class="{ 'widget--on-right': displayConfig.position === 'right' }"
+  >
     <div class="close-unread-wrap">
       <button
         v-if="showCloseButton"
@@ -58,10 +61,6 @@ export default {
       type: Number,
       default: 0,
     },
-    hideMessageBubble: {
-      type: Boolean,
-      default: false,
-    },
     showUnreadView: {
       type: Boolean,
       default: false,
@@ -71,9 +70,10 @@ export default {
     ...mapGetters({
       unreadMessages: 'conversation/getUnreadTextMessages',
       campaign: 'campaign/getActiveCampaign',
+      displayConfig: 'displayConfig/getDisplayConfig',
     }),
     showCloseButton() {
-      return this.unreadMessageCount && this.hideMessageBubble;
+      return this.unreadMessageCount && this.displayConfig.hideMessageBubble;
     },
     sender() {
       const [firstMessage] = this.unreadMessages;
@@ -205,7 +205,7 @@ export default {
   }
 }
 
-.is-widget-right .unread-wrap {
+.widget--on-right .unread-wrap {
   text-align: right;
   overflow: hidden;
 
