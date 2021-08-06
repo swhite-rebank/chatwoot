@@ -1,16 +1,22 @@
 <template>
-  <router
-    :show-unread-view="showUnreadView"
-    :show-campaign-view="showCampaignView"
-    :unread-message-count="unreadMessageCount"
-  />
+  <div id="app" class="woot-widget-wrap">
+    <home
+      v-if="!showUnreadView && !showCampaignView"
+      :unread-message-count="unreadMessageCount"
+    />
+    <unread
+      v-else
+      :show-unread-view="showUnreadView"
+      :unread-message-count="unreadMessageCount"
+    />
+  </div>
 </template>
-
 <script>
+import Home from './views/Home';
+import Unread from './views/Unread';
 import { mapGetters, mapActions } from 'vuex';
 import { setHeader } from 'widget/helpers/axios';
-import { IFrameHelper, RNHelper } from 'widget/helpers/utils';
-import Router from './views/Router';
+import { AppIFrameHelper, RNHelper } from 'widget/helpers/utils';
 import { getLocale } from './helpers/urlParamsHelper';
 import { BUS_EVENTS } from 'shared/constants/busEvents';
 import { isEmptyObject } from 'widget/helpers/utils';
@@ -18,13 +24,16 @@ import { WIDGET_EVENTS } from './constants/widgetEvents';
 export default {
   name: 'App',
   components: {
-    Router,
+    Home,
+    Unread,
   },
   data() {
     return {
       showUnreadView: false,
       showCampaignView: false,
       isWebWidgetTriggered: false,
+      isIFrame: AppIFrameHelper.isIFrame(),
+      isRNWebView: RNHelper.isRNWebView(),
     };
   },
   computed: {
@@ -34,12 +43,6 @@ export default {
       campaigns: 'campaign/getCampaigns',
       activeCampaign: 'campaign/getActiveCampaign',
     }),
-    isIFrame() {
-      return IFrameHelper.isIFrame();
-    },
-    isRNWebView() {
-      return RNHelper.isRNWebView();
-    },
   },
   watch: {
     activeCampaign() {
@@ -71,7 +74,7 @@ export default {
     ...mapActions('campaign', ['initCampaigns', 'executeCampaign']),
     ...mapActions('agent', ['fetchAvailableAgents']),
     setBubbleLabel() {
-      IFrameHelper.sendMessage({
+      AppIFrameHelper.sendMessage({
         event: 'setBubbleLabel',
         label: this.$t('BUBBLE.LABEL'),
       });
@@ -112,13 +115,13 @@ export default {
         !this.isWebWidgetTriggered;
       if (this.isIFrame && isCampaignReadyToExecute) {
         this.showCampaignView = true;
-        IFrameHelper.sendMessage({ event: 'setCampaignMode' });
+        AppIFrameHelper.sendMessage({ event: 'setCampaignMode' });
       }
     },
     setUnreadView() {
       const { unreadMessageCount } = this;
       if (this.isIFrame && unreadMessageCount > 0) {
-        IFrameHelper.sendMessage({
+        AppIFrameHelper.sendMessage({
           event: 'setUnreadMode',
           unreadMessageCount,
         });
@@ -126,7 +129,7 @@ export default {
     },
     unsetUnreadView() {
       if (this.isIFrame) {
-        IFrameHelper.sendMessage({ event: 'resetUnreadMode' });
+        AppIFrameHelper.sendMessage({ event: 'resetUnreadMode' });
       }
     },
     createWidgetEvents(message) {
@@ -145,24 +148,24 @@ export default {
     registerListeners() {
       const { websiteToken } = window.chatwootWebChannel;
       window.addEventListener('message', e => {
-        if (!IFrameHelper.isAValidEvent(e)) {
+        if (!AppIFrameHelper.isAValidEvent(e)) {
           return;
         }
-        const message = IFrameHelper.getMessage(e);
+        const message = AppIFrameHelper.getMessage(e);
         const { event, ...eventData } = message;
-        if (message.event === WIDGET_EVENTS.WIDGET_INITIALIZE_COMPLETE) {
+        if (message.event === WIDGET_EVENTS.T_WIDGET_INITIALIZE_COMPLETE) {
           this.setDisplayConfig(eventData);
           this.setLocale(message.locale);
           this.setBubbleLabel();
           this.fetchOldConversations().then(() => this.setUnreadView());
           this.fetchAvailableAgents(websiteToken);
           this.$store.dispatch('contacts/get');
-        } else if (message.event === 'change-url') {
+        } else if (message.event === WIDGET_EVENTS.T_UPDATE_WEBSITE_URL) {
           const { referrerURL, referrerHost } = message;
           this.initCampaigns({ currentURL: referrerURL, websiteToken });
           window.referrerURL = referrerURL;
           bus.$emit(BUS_EVENTS.SET_REFERRER_HOST, referrerHost);
-        } else if (message.event === WIDGET_EVENTS.TOGGLE_MOBILE_VIEW) {
+        } else if (message.event === WIDGET_EVENTS.T_TOGGLE_MOBILE_VIEW) {
           this.setDisplayConfig({ isMobile: message.isMobile });
         } else if (message.event === 'push-event') {
           this.createWidgetEvents(message);
@@ -194,9 +197,9 @@ export default {
       });
     },
     sendLoadedEvent() {
-      const helper = this.isRNWebView ? RNHelper : IFrameHelper;
+      const helper = this.isRNWebView ? RNHelper : AppIFrameHelper;
       helper.sendMessage({
-        event: 'loaded',
+        event: WIDGET_EVENTS.F_SET_COOKIE_INFORMATION,
         config: {
           authToken: window.authToken,
           channelConfig: window.chatwootWebChannel,

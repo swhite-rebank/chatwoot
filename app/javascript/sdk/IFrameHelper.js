@@ -81,7 +81,7 @@ export const IFrameHelper = {
     };
   },
   initWindowSizeListener: () => {
-    wootOn(window, 'resize', () => IFrameHelper.toggleCloseButton());
+    wootOn(window, 'resize', () => IFrameHelper.markIfMobileView());
   },
   preventDefaultScroll: () => {
     widgetHolder.addEventListener('wheel', event => {
@@ -99,13 +99,13 @@ export const IFrameHelper = {
     });
   },
   events: {
-    loaded: message => {
+    [WIDGET_EVENTS.F_SET_COOKIE_INFORMATION]: message => {
       Cookies.set('cw_conversation', message.config.authToken, {
         expires: 365,
         sameSite: 'Lax',
       });
       window.$chatwoot.hasLoaded = true;
-      IFrameHelper.sendMessage(WIDGET_EVENTS.WIDGET_INITIALIZE_COMPLETE, {
+      IFrameHelper.sendMessage(WIDGET_EVENTS.T_WIDGET_INITIALIZE_COMPLETE, {
         locale: window.$chatwoot.locale,
         position: window.$chatwoot.position,
         hideMessageBubble: window.$chatwoot.hideMessageBubble,
@@ -114,7 +114,7 @@ export const IFrameHelper = {
       IFrameHelper.onLoad({
         widgetColor: message.config.channelConfig.widgetColor,
       });
-      IFrameHelper.toggleCloseButton();
+      IFrameHelper.markIfMobileView();
 
       if (window.$chatwoot.user) {
         IFrameHelper.sendMessage('set-user', window.$chatwoot.user);
@@ -141,7 +141,10 @@ export const IFrameHelper = {
       }
     },
     onLocationChange: ({ referrerURL, referrerHost }) => {
-      IFrameHelper.sendMessage('change-url', { referrerURL, referrerHost });
+      IFrameHelper.sendMessage(WIDGET_EVENTS.T_UPDATE_WEBSITE_URL, {
+        referrerURL,
+        referrerHost,
+      });
     },
 
     setUnreadMode: message => {
@@ -211,12 +214,12 @@ export const IFrameHelper = {
       onClickChatBubble();
     }
   },
-  toggleCloseButton: () => {
-    const { TOGGLE_MOBILE_VIEW } = WIDGET_EVENTS;
+  markIfMobileView: () => {
+    const { T_TOGGLE_MOBILE_VIEW } = WIDGET_EVENTS;
     if (window.matchMedia('(max-width: 668px)').matches) {
-      IFrameHelper.sendMessage(TOGGLE_MOBILE_VIEW, { isMobile: true });
+      IFrameHelper.sendMessage(T_TOGGLE_MOBILE_VIEW, { isMobile: true });
     } else {
-      IFrameHelper.sendMessage(TOGGLE_MOBILE_VIEW, { isMobile: false });
+      IFrameHelper.sendMessage(T_TOGGLE_MOBILE_VIEW, { isMobile: false });
     }
   },
 };
