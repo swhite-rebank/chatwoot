@@ -7,7 +7,6 @@
     :unread-message-count="unreadMessageCount"
     :is-left-aligned="isLeftAligned"
     :hide-message-bubble="hideMessageBubble"
-    :show-popout-button="showPopoutButton"
   />
 </template>
 
@@ -32,7 +31,6 @@ export default {
       isMobile: false,
       hideMessageBubble: false,
       widgetPosition: 'right',
-      showPopoutButton: false,
       isWebWidgetTriggered: false,
     };
   },
@@ -84,6 +82,7 @@ export default {
   },
   methods: {
     ...mapActions('appConfig', ['setWidgetColor']),
+    ...mapActions('displayConfig', ['setDisplayConfig']),
     ...mapActions('conversation', ['fetchOldConversations', 'setUserLastSeen']),
     ...mapActions('campaign', ['initCampaigns', 'executeCampaign']),
     ...mapActions('agent', ['fetchAvailableAgents']),
@@ -131,9 +130,6 @@ export default {
         this.setUserLastSeen();
         this.executeCampaign({ campaignId, websiteToken });
       });
-    },
-    setPopoutDisplay(showPopoutButton) {
-      this.showPopoutButton = showPopoutButton;
     },
     setCampaignView() {
       const { messageCount, activeCampaign } = this;
@@ -187,7 +183,7 @@ export default {
           this.setBubbleLabel();
           this.setPosition(message.position);
           this.fetchOldConversations().then(() => this.setUnreadView());
-          this.setPopoutDisplay(message.showPopoutButton);
+          this.setDisplayConfig(message);
           this.fetchAvailableAgents(websiteToken);
           this.setHideMessageBubble(message.hideMessageBubble);
           this.$store.dispatch('contacts/get');
