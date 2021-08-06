@@ -15,7 +15,7 @@ import Router from './views/Router';
 import { getLocale } from './helpers/urlParamsHelper';
 import { BUS_EVENTS } from 'shared/constants/busEvents';
 import { isEmptyObject } from 'widget/helpers/utils';
-
+import { WIDGET_EVENTS } from './constants/widgetEvents';
 export default {
   name: 'App',
   components: {
@@ -164,10 +164,8 @@ export default {
         const { event, ...eventData } = message;
         if (message.event === 'config-set') {
           this.setDisplayConfig(eventData);
-
           this.setLocale(message.locale);
           this.setBubbleLabel();
-
           this.fetchOldConversations().then(() => this.setUnreadView());
           this.fetchAvailableAgents(websiteToken);
           this.$store.dispatch('contacts/get');
@@ -178,7 +176,7 @@ export default {
           this.initCampaigns({ currentURL: referrerURL, websiteToken });
           window.referrerURL = referrerURL;
           bus.$emit(BUS_EVENTS.SET_REFERRER_HOST, referrerHost);
-        } else if (message.event === 'toggle-close-button') {
+        } else if (message.event === WIDGET_EVENTS.TOGGLE_MOBILE_VIEW) {
           this.setDisplayConfig({ isMobile: message.isMobile });
         } else if (message.event === 'push-event') {
           this.createWidgetEvents(message);
